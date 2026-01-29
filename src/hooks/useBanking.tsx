@@ -10,6 +10,7 @@ export interface Profile {
   balance: number;
   account_number: string;
   routing_number: string;
+  pin_hash: string | null;
 }
 
 export interface Card {
@@ -171,6 +172,34 @@ export const useBanking = () => {
     return { error };
   };
 
+  const updatePin = async (pin: string) => {
+    if (!user) return { error: new Error('Not authenticated') };
+
+    // Simple hash for demo - in production use proper hashing
+    const pinHash = btoa(pin);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ pin_hash: pinHash })
+      .eq('user_id', user.id);
+
+    if (!error) {
+      await fetchData();
+    }
+
+    return { error };
+  };
+
+  const verifyPin = async (pin: string): Promise<boolean> => {
+    if (!profile?.pin_hash) return false;
+    const pinHash = btoa(pin);
+    return pinHash === profile.pin_hash;
+  };
+
+  const hasPin = (): boolean => {
+    return !!profile?.pin_hash;
+  };
+
   return {
     profile,
     cards,
@@ -181,5 +210,8 @@ export const useBanking = () => {
     addSavingsGoal,
     updateSavingsGoal,
     refreshData: fetchData,
+    updatePin,
+    verifyPin,
+    hasPin,
   };
 };

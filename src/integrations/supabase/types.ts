@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      otp_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_number: string
@@ -57,6 +87,7 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          pin_hash: string | null
           routing_number: string
           updated_at: string
           user_id: string
@@ -67,6 +98,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          pin_hash?: string | null
           routing_number?: string
           updated_at?: string
           user_id: string
@@ -77,6 +109,7 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          pin_hash?: string | null
           routing_number?: string
           updated_at?: string
           user_id?: string

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Building2, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import OTPVerification from '@/components/auth/OTPVerification';
 
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -24,12 +25,14 @@ const Auth = () => {
     fullName: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pendingOtp, setPendingOtp] = useState<{ email: string; userId: string } | null>(null);
 
-  // Redirect if already logged in
-  if (user) {
-    navigate('/');
-    return null;
-  }
+  // Redirect if already logged in and OTP verified
+  useEffect(() => {
+    if (user && !pendingOtp) {
+      navigate('/');
+    }
+  }, [user, pendingOtp, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +69,11 @@ const Auth = () => {
             setErrors({ submit: error.message });
           }
         } else {
-          navigate('/');
+          // Get the user ID for OTP
+          const { data: { user: currentUser } } = await import('@/integrations/supabase/client').then(m => m.supabase.auth.getUser());
+          if (currentUser) {
+            setPendingOtp({ email: formData.email, userId: currentUser.id });
+          }
         }
       } else {
         const { error } = await signUp(formData.email, formData.password, formData.fullName || 'Robert Stork');
@@ -87,10 +94,38 @@ const Auth = () => {
     }
   };
 
+  const handleOtpSuccess = () => {
+    setPendingOtp(null);
+    navigate('/');
+  };
+
+  const handleOtpBack = async () => {
+    // Sign out and go back to login
+    const { supabase } = await import('@/integrations/supabase/client');
+    await supabase.auth.signOut();
+    setPendingOtp(null);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
+  }
+
+  // Show OTP verification if pending
+  if (pendingOtp) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-8">
+        <div className="w-full max-w-md">
+          <OTPVerification
+            email={pendingOtp.email}
+            userId={pendingOtp.userId}
+            onSuccess={handleOtpSuccess}
+            onBack={handleOtpBack}
+          />
+        </div>
       </div>
     );
   }
@@ -103,7 +138,7 @@ const Auth = () => {
           <div className="w-20 h-20 rounded-2xl bg-primary-foreground/10 flex items-center justify-center mx-auto mb-8">
             <Building2 className="w-10 h-10" />
           </div>
-          <h1 className="text-4xl font-bold mb-4">Vault</h1>
+          <h1 className="text-4xl font-bold mb-4">NovaaPay</h1>
           <p className="text-xl opacity-80 mb-8">Premium Banking</p>
           <p className="max-w-md opacity-60">
             Secure, modern banking designed for those who expect excellence. 
@@ -119,7 +154,7 @@ const Auth = () => {
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="font-bold text-xl">Vault</h1>
+            <h1 className="font-bold text-xl">NovaaPay</h1>
           </div>
 
           <h2 className="text-2xl font-bold text-foreground mb-2">
